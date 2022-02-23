@@ -10,11 +10,9 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import ElasticNet
 from get_data import read_params
-from urllib.parse import urlparse
 import argparse
 import joblib
 import json
-import mlflow
 
 
 def eval_metrics(actual, pred):
@@ -45,46 +43,45 @@ def train_and_evaluate(config_path):
     train_x = train.drop(target, axis=1)
     test_x = test.drop(target, axis=1)
 
-    ################### MLFLOW ###############################
-    mlflow_config = config["mlflow_config"]
-    # remote_server_uri = mlflow_config["remote_server_uri"]
-    #
-    # mlflow.set_tracking_uri(remote_server_uri)
+    lr = ElasticNet(
+        alpha=alpha,
+        l1_ratio=l1_ratio,
+        random_state=random_state)
+    lr.fit(train_x, train_y)
 
-    mlflow.set_experiment(mlflow_config["experiment_name"])
+    predicted_qualities = lr.predict(test_x)
 
+    (rmse, mae, r2) = eval_metrics(test_y, predicted_qualities)
 
-    with mlflow.start_run():
-        lr = ElasticNet(alpha=0.5, l1_ratio=0.5, random_state=42)
-        lr.fit(train_x, train_y)
+    print("Elasticnet model (alpha=%f, l1_ratio=%f):" % (alpha, l1_ratio))
+    print("  RMSE: %s" % rmse)
+    print("  MAE: %s" % mae)
+    print("  R2: %s" % r2)
 
-        predicted_qualities = lr.predict(test_x)
+    #####################################################
+    scores_file = config["reports"]["scores"]
+    params_file = config["reports"]["params"]
 
-        (rmse, mae, r2) = eval_metrics(test_y, predicted_qualities)
+    with open(scores_file, "w") as f:
+        scores = {
+            "rmse": rmse,
+            "mae": mae,
+            "r2": r2
+        }
+        json.dump(scores, f, indent=4)
 
-        print("Elasticnet model (alpha=%f, l1_ratio=%f):" % (alpha, l1_ratio))
-        print("  RMSE: %s" % rmse)
-        print("  MAE: %s" % mae)
-        print("  R2: %s" % r2)
+    with open(params_file, "w") as f:
+        params = {
+            "alpha": alpha,
+            "l1_ratio": l1_ratio,
+        }
+        json.dump(params, f, indent=4)
+    #####################################################
 
-        mlflow.log_param("alpha", alpha)
-        mlflow.log_param("l1_ratio", l1_ratio)
-        mlflow.log_metric("rmse", rmse)
-        mlflow.log_metric("r2", r2)
-        mlflow.log_metric("mae", mae)
+    os.makedirs(model_dir, exist_ok=True)
+    model_path = os.path.join(model_dir, "model.joblib")
 
-        tracking_url_type_store = urlparse(mlflow.get_tracking_uri()).scheme
-
-        # Model registry does not work with file store
-        if tracking_url_type_store != "file":
-
-            # Register the model
-            # There are other ways to use the Model Registry, which depends on the use case,
-            # please refer to the doc for more information:
-            # https://mlflow.org/docs/latest/model-registry.html#api-workflow
-            mlflow.sklearn.log_model(lr, "model", registered_model_name="ElasticnetWineModel")
-        else:
-            mlflow.sklearn.log_model(lr, "model")
+    joblib.dump(lr, model_path)
 
 
 if __name__ == "__main__":

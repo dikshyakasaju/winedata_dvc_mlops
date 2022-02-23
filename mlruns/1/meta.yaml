@@ -1,4 +1,0 @@
-artifact_location: file:///Users/dikshyakasaju/PycharmProjects/winequality_dvc/mlruns/1
-experiment_id: '1'
-lifecycle_stage: active
-name: ElasticNet regression
