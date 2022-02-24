@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/dikshyakasaju/PycharmProjects/winequality_dvc/mlruns/1/07a134e7d4d14244be09ebc7f9195752/artifacts
+end_time: 1645706787391
+entry_point_name: ''
+experiment_id: '1'
+lifecycle_stage: active
+name: ''
+run_id: 07a134e7d4d14244be09ebc7f9195752
+run_uuid: 07a134e7d4d14244be09ebc7f9195752
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1645706787374
+status: 4
+tags: []
+user_id: dikshyakasaju
